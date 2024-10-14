@@ -1,0 +1,30 @@
+[package]
+name = "aegis"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.9.34"
+thiserror = "1.0.64"
+tokio = { version = "1.40.0", features = ["full"]}
+tracing = { version = "0.1", features = ["std", "attributes"] }
+tracing-subscriber = { version = "0.3", features = [
+    "std",
+    "serde",
+    "json",
+    "fmt",
+    "tracing-log",
+] }
+bb8-redis = "0.17.0"
+bb8 = "0.8.5"
+tower-http = { version = "0.6.1", features = ["timeout", "trace", "request-id"] }
+url = "2.5.2"
+regex = "1.11.0"
+reqwest = "0.12.8"
+clap = { version = "4.5.20", features = ["derive"] }
+tower = "0.5.1"
+hyper = "1.4.1"
+http-body-util = "0.1.2"
+bytes = "1.7.2"
+actix-web = "4.9.0"
