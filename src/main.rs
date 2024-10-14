@@ -8,6 +8,8 @@ use std::sync::Arc;
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::EnvFilter;
+
 
 use config::AegisConfig;
 use tokio::sync::Mutex;
@@ -34,18 +36,18 @@ async fn main() -> std::io::Result<()> {
 
     // Fetch config
     let config: AegisConfig = AegisConfig::from_file(&args.config_file).unwrap();
-    match config.validate() {
-        Ok(_) => tracing::info!("Config file validated successfully"),
-        Err(e) => panic!("error occured: {:?}", e.to_string()),
-    };
+    config.validate().unwrap();
 
     // Init logger
     let fmt_layer = tracing_subscriber::fmt::layer()
         .with_span_events(FmtSpan::NONE)
         .with_target(true);
 
+    let filter = EnvFilter::new("info,actix_server=error");
+
     tracing_subscriber::registry()
         .with(config.server.log_level.into_level_filter())
+        .with(filter)
         .with(fmt_layer)
         .init();
 
@@ -57,7 +59,7 @@ async fn main() -> std::io::Result<()> {
                 .await
                 .unwrap(),
         );
-        tracing::info!("Connected to redis");
+        tracing::info!("🔌 Connected to redis");
     } else {
         tracing::warn!("Redis is disabled");
         redis_client = None

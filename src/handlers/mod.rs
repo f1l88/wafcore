@@ -26,7 +26,7 @@ pub struct AegisState {
 const REDIS_FIREWALL_BLOCK_KEY: &str = "blocked_requests";
 
 #[derive(Debug)]
-pub enum RegularRuleStatementInspectValue {
+enum RegularRuleStatementInspectValue {
     Single(String),
     All(Vec<String>),
 }
