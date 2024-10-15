@@ -1,5 +1,8 @@
 use bb8::Pool;
-use bb8_redis::{redis::cmd, RedisConnectionManager};
+use bb8_redis::{
+    redis::{cmd, AsyncCommands},
+    RedisConnectionManager,
+};
 use thiserror::Error;
 
 #[derive(Debug, Clone)]
@@ -43,27 +46,47 @@ impl RedisClient {
         key: String,
     ) -> Result<T, RedisError> {
         let mut conn = self.pool.get().await?;
-        match bb8_redis::redis::Cmd::get(key)
-            .query_async::<T>(&mut *conn)
-            .await
-        {
-            Ok(v) => Ok(v),
-            Err(_) => Err(RedisError::RedisError),
-        }
+        let res = conn.get(key).await?;
+        return Ok(res);
     }
 
-    pub async fn incr<T: bb8_redis::redis::FromRedisValue + bb8_redis::redis::ToRedisArgs>(
+    pub async fn incr<
+        T: bb8_redis::redis::FromRedisValue + bb8_redis::redis::ToRedisArgs + Send + Sync,
+    >(
         &self,
         key: String,
         delta: T,
     ) -> Result<T, RedisError> {
         let mut conn = self.pool.get().await?;
-        match bb8_redis::redis::Cmd::incr(key, delta)
-            .query_async::<T>(&mut *conn)
-            .await
-        {
-            Ok(v) => Ok(v),
-            Err(_) => Err(RedisError::RedisError),
-        }
+        let res = conn.incr(key, delta).await?;
+        return Ok(res);
+    }
+
+    pub async fn setnx<T: bb8_redis::redis::ToRedisArgs + Send + Sync>(
+        &self,
+        key: String,
+        value: T,
+    ) -> Result<bool, RedisError> {
+        let mut conn = self.pool.get().await?;
+        let res: i32 = conn.set_nx(key, value).await?;
+        return Ok(res == 1);
+    }
+
+    pub async fn decr<
+        T: bb8_redis::redis::FromRedisValue + bb8_redis::redis::ToRedisArgs + Send + Sync,
+    >(
+        &self,
+        key: String,
+        delta: T,
+    ) -> Result<T, RedisError> {
+        let mut conn = self.pool.get().await?;
+        let res = conn.decr(key, delta).await?;
+        return Ok(res);
+    }
+
+    pub async fn expire(&self, key: String, delta: i64) -> Result<bool, RedisError> {
+        let mut conn = self.pool.get().await?;
+        let res = conn.expire(key, delta).await?;
+        return Ok(res);
     }
 }

@@ -164,7 +164,22 @@ pub enum RegularRuleStatementInspect {
         scope: RegularRuleStatementInspectTypeScope,
         content_filter: RegularRuleStatementInspectTypeContentFilter,
     },
+    IpSet {source: RegularRuleStatementIpSetSource}
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum RegularRuleStatementIpSetSource {
+    SourceIp,
+    Header {name: String, position: RegularRuleStatementIpSetSourcePosition}
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum RegularRuleStatementIpSetSourcePosition {
+    First,
+    Last,
+    Any
+}
+
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum RegularRuleCondition {
