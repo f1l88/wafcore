@@ -18,8 +18,6 @@ pub enum RedisError {
     RedisConnectionError(#[from] bb8_redis::redis::RedisError),
     #[error("error occured while fetching connection from pool")]
     RedisConnectionPoolError(#[from] bb8::RunError<bb8_redis::redis::RedisError>),
-    #[error("error occured while connecting to redis server")]
-    RedisError,
 }
 
 impl RedisClient {

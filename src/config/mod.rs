@@ -108,7 +108,6 @@ fn default_server_log_level() -> AegisServerLogLevel {
     AegisServerLogLevel::INFO
 }
 
-
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub enum AegisServerLogLevel {
     INFO,
@@ -153,7 +152,6 @@ fn default_regular_rule_negate_statement() -> bool {
     false
 }
 
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum RegularRuleStatementMatchType {
     StartsWith,
@@ -196,22 +194,26 @@ pub enum RegularRuleStatementInspect {
         scope: RegularRuleStatementInspectTypeScope,
         content_filter: RegularRuleStatementInspectTypeContentFilter,
     },
-    IpSet {source: RegularRuleStatementIpSetSource}
+    IpSet {
+        source: RegularRuleStatementIpSetSource,
+    },
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum RegularRuleStatementIpSetSource {
     SourceIp,
-    Header {name: String, position: RegularRuleStatementIpSetSourcePosition}
+    Header {
+        name: String,
+        position: RegularRuleStatementIpSetSourcePosition,
+    },
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum RegularRuleStatementIpSetSourcePosition {
     First,
     Last,
-    Any
+    Any,
 }
-
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum RegularRuleCondition {
@@ -296,23 +298,25 @@ pub async fn watch_config(path: String, config: Arc<Mutex<AegisConfig>>) {
     tracing::info!("🔄 Watching config file for changes");
     loop {
         sleep(time::Duration::from_secs(5)).await;
-        match  AegisConfig::from_file(&path) {
-            Ok(new_config) => {let mut current_config: tokio::sync::MutexGuard<'_, AegisConfig> = config.lock().await;
-            if new_config.config_hash != current_config.config_hash {
-                match new_config.validate() {
-                    Ok(_) => {
-                        *current_config = new_config;
-                        tracing::debug!("Config file updated successfully");
-                    }
-                    Err(e) => {
-                        tracing::error!("Config file invalid: {e}");
-                    }
+        match AegisConfig::from_file(&path) {
+            Ok(new_config) => {
+                let mut current_config: tokio::sync::MutexGuard<'_, AegisConfig> =
+                    config.lock().await;
+                if new_config.config_hash != current_config.config_hash {
+                    match new_config.validate() {
+                        Ok(_) => {
+                            *current_config = new_config;
+                            tracing::debug!("Config file updated successfully");
+                        }
+                        Err(e) => {
+                            tracing::error!("Config file invalid: {e}");
+                        }
+                    };
                 };
-            };
+            }
+            Err(err) => {
+                tracing::error!("Error while fetching config: {}", err.to_string())
+            }
         }
-        Err(err) => {
-            tracing::error!("Error while fetching config: {}", err.to_string())
-        }
-    }
     }
 }

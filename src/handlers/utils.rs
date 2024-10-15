@@ -4,11 +4,19 @@ use actix_web::{cookie::Cookie, http::StatusCode, web::Data, HttpRequest, HttpRe
 use regex::Regex;
 use url::Url;
 
-use crate::config::{RegularRuleStatement, RegularRuleStatementInspect, RegularRuleStatementInspectTypeContentFilter, RegularRuleStatementInspectTypeScope, RegularRuleStatementIpSetSource, RegularRuleStatementIpSetSourcePosition, RegularRuleStatementMatchType};
+use crate::config::{
+    RegularRuleStatement, RegularRuleStatementInspect,
+    RegularRuleStatementInspectTypeContentFilter, RegularRuleStatementInspectTypeScope,
+    RegularRuleStatementIpSetSource, RegularRuleStatementIpSetSourcePosition,
+    RegularRuleStatementMatchType,
+};
 
 use super::{AegisState, RegularRuleStatementInspectValue};
 
-pub fn check_statement_match(value: RegularRuleStatementInspectValue, statement: RegularRuleStatement ) -> bool{
+pub fn check_statement_match(
+    value: RegularRuleStatementInspectValue,
+    statement: RegularRuleStatement,
+) -> bool {
     match statement.match_type {
         RegularRuleStatementMatchType::StartsWith => match value {
             RegularRuleStatementInspectValue::Single(val) => {
@@ -22,9 +30,7 @@ pub fn check_statement_match(value: RegularRuleStatementInspectValue, statement:
                 .any(|val| val.starts_with(&statement.match_string)),
         },
         RegularRuleStatementMatchType::EndsWith => match value {
-            RegularRuleStatementInspectValue::Single(val) => {
-                val.ends_with(&statement.match_string)
-            }
+            RegularRuleStatementInspectValue::Single(val) => val.ends_with(&statement.match_string),
             RegularRuleStatementInspectValue::All(vec) => {
                 vec.iter().all(|val| val.ends_with(&statement.match_string))
             }
@@ -33,9 +39,7 @@ pub fn check_statement_match(value: RegularRuleStatementInspectValue, statement:
             }
         },
         RegularRuleStatementMatchType::Contains => match value {
-            RegularRuleStatementInspectValue::Single(val) => {
-                val.contains(&statement.match_string)
-            }
+            RegularRuleStatementInspectValue::Single(val) => val.contains(&statement.match_string),
             RegularRuleStatementInspectValue::All(vec) => {
                 vec.iter().all(|val| val.contains(&statement.match_string))
             }
@@ -44,9 +48,7 @@ pub fn check_statement_match(value: RegularRuleStatementInspectValue, statement:
             }
         },
         RegularRuleStatementMatchType::Exact => match value {
-            RegularRuleStatementInspectValue::Single(val) => {
-                val == statement.match_string
-            }
+            RegularRuleStatementInspectValue::Single(val) => val == statement.match_string,
             RegularRuleStatementInspectValue::All(vec) => {
                 vec.iter().all(|val| *val == statement.match_string)
             }
@@ -56,24 +58,21 @@ pub fn check_statement_match(value: RegularRuleStatementInspectValue, statement:
         },
         RegularRuleStatementMatchType::Regex => match value {
             RegularRuleStatementInspectValue::Single(val) => {
-                if let Ok(re) = Regex::new(&format!(r"{}", statement.match_string))
-                {
+                if let Ok(re) = Regex::new(&format!(r"{}", statement.match_string)) {
                     re.is_match(&val)
                 } else {
                     false
                 }
             }
             RegularRuleStatementInspectValue::All(vec) => vec.iter().all(|val| {
-                if let Ok(re) = Regex::new(&format!(r"{}", statement.match_string))
-                {
+                if let Ok(re) = Regex::new(&format!(r"{}", statement.match_string)) {
                     re.is_match(&val)
                 } else {
                     false
                 }
             }),
             RegularRuleStatementInspectValue::Any(vec) => vec.iter().any(|val| {
-                if let Ok(re) = Regex::new(&format!(r"{}", statement.match_string))
-                {
+                if let Ok(re) = Regex::new(&format!(r"{}", statement.match_string)) {
                     re.is_match(&val)
                 } else {
                     false
@@ -321,4 +320,3 @@ pub fn filter_inspect_content(
         }
     }
 }
-

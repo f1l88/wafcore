@@ -107,19 +107,17 @@ pub async fn root(data: Data<AegisState>, req: HttpRequest) -> HttpResponse {
                                         continue;
                                     }
                                 } else {
-                                    let remaining_limit = match redis_client
-                                        .decr(ip.clone(), 1)
-                                        .await
-                                    {
-                                        Ok(remaining_limit) => remaining_limit,
-                                        Err(err) => {
-                                            tracing::error!(
+                                    let remaining_limit =
+                                        match redis_client.decr(ip.clone(), 1).await {
+                                            Ok(remaining_limit) => remaining_limit,
+                                            Err(err) => {
+                                                tracing::error!(
                                                 "Error occured while decrementing key in redis: {}",
                                                 err.to_string()
                                             );
-                                            continue;
-                                        }
-                                    };
+                                                continue;
+                                            }
+                                        };
 
                                     if remaining_limit <= 0 {
                                         RuleAction::Block
