@@ -77,13 +77,37 @@ fn default_redis_config() -> RedisConfig {
     }
 }
 
+fn default_redis_enabled() -> bool {
+    true
+}
+
+fn default_redis_url() -> String {
+    "redis://127.0.0.1/".to_string()
+}
+
 // Server config
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct AegisServer {
+    #[serde(default = "default_server_address")]
     pub address: String,
+    #[serde(default = "default_server_port")]
     pub port: u16,
+    #[serde(default = "default_server_log_level")]
     pub log_level: AegisServerLogLevel,
 }
+
+fn default_server_address() -> String {
+    "0.0.0.0".to_string()
+}
+
+fn default_server_port() -> u16 {
+    4000
+}
+
+fn default_server_log_level() -> AegisServerLogLevel {
+    AegisServerLogLevel::INFO
+}
+
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub enum AegisServerLogLevel {
@@ -109,7 +133,9 @@ impl AegisServerLogLevel {
 // Redis config
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct RedisConfig {
+    #[serde(default = "default_redis_enabled")]
     pub enabled: bool,
+    #[serde(default = "default_redis_url")]
     pub url: String,
 }
 
@@ -117,10 +143,16 @@ pub struct RedisConfig {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RegularRuleStatement {
     pub inspect: RegularRuleStatementInspect,
+    #[serde(default = "default_regular_rule_negate_statement")]
     pub negate_statement: bool,
     pub match_type: RegularRuleStatementMatchType,
     pub match_string: String,
 }
+
+fn default_regular_rule_negate_statement() -> bool {
+    false
+}
+
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum RegularRuleStatementMatchType {
