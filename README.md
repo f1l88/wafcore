@@ -103,6 +103,6 @@ This project is licensed under the MIT License. See the `LICENSE` file for more 
 
 ## Contact
 
-- **Author**: [Your Name](https://github.com/utibeabasi6)
+- **Author**: [Utibeabasi Umanah](https://github.com/utibeabasi6)
 - **Email**: utibeabasiumanah6@gmail.com
 - **Project Repository**: [Aegis on GitHub](https://github.com/utibeabasi6/aegis)
