@@ -1,20 +1,21 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
-use actix_web::{http::StatusCode, web::Data, HttpRequest, HttpResponse};
+use actix_web::{cookie::Cookie, http::StatusCode, web::Data, HttpRequest, HttpResponse};
+use regex::Regex;
 use tokio::sync::Mutex;
 use url::Url;
 
-use crate::{clients, config::AegisConfig};
-
-use actix_web::cookie::Cookie;
-use regex::Regex;
-use std::collections::HashMap;
+use crate::clients;
 
 use crate::config::{
-    AegisRule, RegularRuleCondition, RegularRuleStatementInspect,
+    AegisConfig, AegisRule, RegularRuleCondition, RegularRuleStatementInspect,
     RegularRuleStatementInspectTypeContentFilter, RegularRuleStatementInspectTypeScope,
     RegularRuleStatementMatchType, RuleAction,
 };
+
+// Constants
+const REDIS_FIREWALL_BLOCK_KEY: &str = "blocked_requests";
 
 #[derive(Clone, Debug)]
 pub struct AegisState {
@@ -22,8 +23,6 @@ pub struct AegisState {
     pub redis_client: Option<clients::redis::RedisClient>,
     pub http_client: reqwest::Client,
 }
-
-const REDIS_FIREWALL_BLOCK_KEY: &str = "blocked_requests";
 
 #[derive(Debug)]
 enum RegularRuleStatementInspectValue {
@@ -122,11 +121,7 @@ pub async fn root(data: Data<AegisState>, req: HttpRequest) -> HttpResponse {
                     }
                 }
             }
-            AegisRule::RateBased { .. } => {
-                // let client_ip = addr.ip().to_string();
-                // tracing::info!("{:?}", addr);
-                RuleAction::Allow
-            }
+            AegisRule::RateBased { .. } => RuleAction::Allow,
         };
 
         match action {
@@ -355,7 +350,6 @@ async fn proxy(data: Data<AegisState>, req: HttpRequest) -> HttpResponse {
         proxy_res.insert_header((name.as_str(), value.to_str().unwrap_or("")));
     }
 
-    // Copy the body from the target server's response
     let body = res.bytes().await.unwrap_or_default();
     proxy_res.body(body)
 }

@@ -69,6 +69,7 @@ fn default_server() -> AegisServer {
 }
 
 // TODO: Set default redis config separately
+// Default redis config
 fn default_redis_config() -> RedisConfig {
     RedisConfig {
         enabled: true,
@@ -105,6 +106,7 @@ impl AegisServerLogLevel {
     }
 }
 
+// Redis config
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct RedisConfig {
     pub enabled: bool,
@@ -244,11 +246,11 @@ impl AegisConfig {
 }
 
 pub async fn watch_config(path: String, config: Arc<Mutex<AegisConfig>>) {
-    tracing::info!("⏱ Watching config file for changes");
+    tracing::info!("🔄 Watching config file for changes");
     loop {
         sleep(time::Duration::from_secs(5)).await;
-        if let Ok(new_config) = AegisConfig::from_file(&path) {
-            let mut current_config: tokio::sync::MutexGuard<'_, AegisConfig> = config.lock().await;
+        match  AegisConfig::from_file(&path) {
+            Ok(new_config) => {let mut current_config: tokio::sync::MutexGuard<'_, AegisConfig> = config.lock().await;
             if new_config.config_hash != current_config.config_hash {
                 match new_config.validate() {
                     Ok(_) => {
@@ -260,8 +262,10 @@ pub async fn watch_config(path: String, config: Arc<Mutex<AegisConfig>>) {
                     }
                 };
             };
-        } else {
-            tracing::error!("Failed to fetch new config");
         }
+        Err(err) => {
+            tracing::error!("Error while fetching config: {}", err.to_string())
+        }
+    }
     }
 }

@@ -10,7 +10,6 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::EnvFilter;
 
-
 use config::AegisConfig;
 use tokio::sync::Mutex;
 use tokio::time;
@@ -91,7 +90,6 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .wrap(Logger::new("%a %r %s %b %{Referer}i %{User-Agent}i %D"))
-            // .wrap(from_fn(firewall_middleware))
             .app_data(Data::new(state.clone()))
             .default_service(web::to(root))
     })
