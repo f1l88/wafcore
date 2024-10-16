@@ -14,9 +14,8 @@ pub async fn check_regular_rule_match(
     let mut statement_results: Vec<bool> = vec![];
     for statement in statements {
         let value: RegularRuleStatementInspectValue =
-            fetch_statement_inspect(&statement.inspect, &req).await;
+            fetch_statement_inspect(&statement.inspect, req).await;
 
-        tracing::info!("{:?}", value);
         let statement_match: bool = check_statement_match(value, statement.clone());
 
         // Negate statement if stated in config
@@ -30,9 +29,9 @@ pub async fn check_regular_rule_match(
     }
 
     let is_match = match condition {
-        RegularRuleCondition::One => statement_results.iter().any(|r| *r == true),
-        RegularRuleCondition::All => statement_results.iter().all(|r| *r == true),
-        RegularRuleCondition::None => !statement_results.iter().all(|r| *r != true),
+        RegularRuleCondition::One => statement_results.iter().any(|r| *r),
+        RegularRuleCondition::All => statement_results.iter().all(|r| *r),
+        RegularRuleCondition::None => !statement_results.iter().all(|r| !(*r)),
     };
 
     is_match

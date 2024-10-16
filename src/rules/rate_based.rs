@@ -14,7 +14,9 @@ pub async fn check_rate_based_rule_match(
 ) -> Option<RuleAction> {
     let action = match key {
         RateBasedRuleKey::SourceIp => {
-            let action = if let Some(ip_addr) = req.peer_addr() {
+            
+
+            if let Some(ip_addr) = req.peer_addr() {
                 let ip = ip_addr.ip().to_string();
                 // try to set rate limit key in redis
                 if let Some(redis_client) = &data.redis_client {
@@ -71,9 +73,7 @@ pub async fn check_rate_based_rule_match(
                 }
             } else {
                 return None; // Skip this rule if we cant fetch the ip
-            };
-
-            action
+            }
         }
     };
 

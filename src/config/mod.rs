@@ -298,7 +298,7 @@ impl AegisConfig {
         Ok(aegis_config)
     }
 
-    pub fn validate(self: &Self) -> Result<bool, ConfigError> {
+    pub fn validate(&self) -> Result<bool, ConfigError> {
         let _ = Url::parse(self.upstream.as_str())?;
         Ok(true)
     }

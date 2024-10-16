@@ -50,7 +50,7 @@ pub async fn proxy(data: Data<AegisState>, req: HttpRequest) -> HttpResponse {
         tracing::error!("Failed to fetch from upstream: {:?}", err);
     }) {
         Ok(res) => res,
-        Err(_) => return HttpResponse::InternalServerError().body("Failed to fetch upstream url"),
+        Err(_) => return HttpResponse::InternalServerError().body("Failed to fetch from upstream"),
     };
 
     let proxy_status = match StatusCode::from_u16(res.status().as_u16()) {

@@ -45,7 +45,7 @@ impl RedisClient {
     ) -> Result<T, RedisError> {
         let mut conn = self.pool.get().await?;
         let res = conn.get(key).await?;
-        return Ok(res);
+        Ok(res)
     }
 
     pub async fn incr<
@@ -57,7 +57,7 @@ impl RedisClient {
     ) -> Result<T, RedisError> {
         let mut conn = self.pool.get().await?;
         let res = conn.incr(key, delta).await?;
-        return Ok(res);
+        Ok(res)
     }
 
     pub async fn setnx<T: bb8_redis::redis::ToRedisArgs + Send + Sync>(
@@ -67,7 +67,7 @@ impl RedisClient {
     ) -> Result<bool, RedisError> {
         let mut conn = self.pool.get().await?;
         let res: i32 = conn.set_nx(key, value).await?;
-        return Ok(res == 1);
+        Ok(res == 1)
     }
 
     pub async fn decr<
@@ -79,12 +79,12 @@ impl RedisClient {
     ) -> Result<T, RedisError> {
         let mut conn = self.pool.get().await?;
         let res = conn.decr(key, delta).await?;
-        return Ok(res);
+        Ok(res)
     }
 
     pub async fn expire(&self, key: String, delta: i64) -> Result<bool, RedisError> {
         let mut conn = self.pool.get().await?;
         let res = conn.expire(key, delta).await?;
-        return Ok(res);
+        Ok(res)
     }
 }

@@ -33,7 +33,7 @@ pub async fn fetch_statement_inspect(
                     value.to_str().unwrap_or("").to_string(),
                 );
             } else {
-                return RegularRuleStatementInspectValue::Single("".to_string());
+                RegularRuleStatementInspectValue::Single("".to_string())
             }
         }
         RegularRuleStatementInspect::QueryParameter { key } => request
@@ -67,8 +67,7 @@ pub async fn fetch_statement_inspect(
                         .headers()
                         .iter()
                         .filter_map(|h| {
-                            if let Some(_) =
-                                filter_inspect_header_content(content_filter, h.0.to_string())
+                            if filter_inspect_header_content(content_filter, h.0.to_string()).is_some()
                             {
                                 Some(h)
                             } else {
@@ -96,8 +95,7 @@ pub async fn fetch_statement_inspect(
                         .headers()
                         .iter()
                         .filter_map(|h| {
-                            if let Some(_) =
-                                filter_inspect_header_content(content_filter, h.0.to_string())
+                            if filter_inspect_header_content(content_filter, h.0.to_string()).is_some()
                             {
                                 Some(h)
                             } else {
@@ -264,7 +262,7 @@ pub fn check_statement_match(
         },
         RegularRuleStatementMatchType::Regex => match value {
             RegularRuleStatementInspectValue::Single(val) => {
-                if let Ok(re) = Regex::new(&format!(r"{}", statement.match_string)) {
+                if let Ok(re) = Regex::new(&statement.match_string.to_string()) {
                     re.is_match(&val)
                 } else {
                     false
@@ -273,17 +271,15 @@ pub fn check_statement_match(
             RegularRuleStatementInspectValue::All(vec) => vec.iter().all(|val| {
                 if vec.is_empty() {
                     false
+                } else if let Ok(re) = Regex::new(&statement.match_string.to_string()) {
+                    re.is_match(val)
                 } else {
-                    if let Ok(re) = Regex::new(&format!(r"{}", statement.match_string)) {
-                        re.is_match(&val)
-                    } else {
-                        false
-                    }
+                    false
                 }
             }),
             RegularRuleStatementInspectValue::Any(vec) => vec.iter().any(|val| {
-                if let Ok(re) = Regex::new(&format!(r"{}", statement.match_string)) {
-                    re.is_match(&val)
+                if let Ok(re) = Regex::new(&statement.match_string.to_string()) {
+                    re.is_match(val)
                 } else {
                     false
                 }

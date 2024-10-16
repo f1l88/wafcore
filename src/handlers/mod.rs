@@ -79,10 +79,10 @@ pub async fn root(data: Data<AegisState>, req: HttpRequest) -> HttpResponse {
     match config.default_action {
         RuleAction::Allow => {
             let res: HttpResponse = proxy(data, req).await;
-            return res;
+            res
         }
-        RuleAction::Block => return HttpResponse::Forbidden().body("Request blocked by firewall"),
+        RuleAction::Block => HttpResponse::Forbidden().body("Request blocked by firewall"),
 
-        _ => return HttpResponse::Forbidden().body("Request blocked by firewall"),
+        _ => HttpResponse::Forbidden().body("Request blocked by firewall"),
     }
 }
