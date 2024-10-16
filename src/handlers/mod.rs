@@ -2,11 +2,13 @@ use std::sync::Arc;
 
 use actix_web::{web::Data, HttpRequest, HttpResponse};
 use tokio::sync::Mutex;
-use utils::{check_statement_match, fetch_statement_inspect, proxy};
+use utils::proxy;
 
 use crate::clients;
 
-use crate::config::{AegisConfig, AegisRule, RateBasedRuleKey, RegularRuleCondition, RuleAction};
+use crate::config::{AegisConfig, AegisRule, RuleAction};
+use crate::rules::rate_based::check_rate_based_rule_match;
+use crate::rules::regular::check_regular_rule_match;
 
 mod utils;
 
@@ -20,13 +22,6 @@ pub struct AegisState {
     pub http_client: reqwest::Client,
 }
 
-#[derive(Debug)]
-enum RegularRuleStatementInspectValue {
-    Single(String),
-    All(Vec<String>),
-    Any(Vec<String>),
-}
-
 pub async fn root(data: Data<AegisState>, req: HttpRequest) -> HttpResponse {
     let config = data.config.lock().await.clone();
     for rule in config.rules.clone() {
@@ -36,29 +31,10 @@ pub async fn root(data: Data<AegisState>, req: HttpRequest) -> HttpResponse {
                 condition,
                 statements,
             } => {
-                let mut statement_results: Vec<bool> = vec![];
-                for statement in statements {
-                    let value: RegularRuleStatementInspectValue =
-                        fetch_statement_inspect(&statement.inspect, &req).await;
-                    let statement_match: bool = check_statement_match(value, statement.clone());
+                let regular_rule_statement_match =
+                    check_regular_rule_match(&req, condition, statements).await;
 
-                    // Negate statement if stated in config
-                    let rule_match: bool = if statement.negate_statement {
-                        !statement_match
-                    } else {
-                        statement_match
-                    };
-
-                    statement_results.push(rule_match);
-                }
-
-                let is_match = match condition {
-                    RegularRuleCondition::One => statement_results.iter().any(|r| *r == true),
-                    RegularRuleCondition::All => statement_results.iter().all(|r| *r == true),
-                    RegularRuleCondition::None => !statement_results.iter().all(|r| *r != true),
-                };
-
-                if is_match {
+                if regular_rule_statement_match {
                     action
                 } else {
                     continue;
@@ -69,67 +45,13 @@ pub async fn root(data: Data<AegisState>, req: HttpRequest) -> HttpResponse {
                 evaluation_window_seconds,
                 key,
             } => {
-                match key {
-                    RateBasedRuleKey::SourceIp => {
-                        let action = if let Some(ip_addr) = req.peer_addr() {
-                            let ip = ip_addr.ip().to_string();
-                            // try to set rate limit key in redis
-                            if let Some(redis_client) = &data.redis_client {
-                                // If error occurs while setting key in redis, skip this rule
-                                let set_key = match redis_client.setnx(ip.clone(), limit).await {
-                                    Ok(set_key) => set_key,
-                                    Err(err) => {
-                                        tracing::error!(
-                                            "Error occured while setting key in redis: {}",
-                                            err.to_string()
-                                        );
-                                        continue;
-                                    }
-                                };
-                                if set_key {
-                                    let set_key_expiry = match redis_client
-                                        .expire(ip.clone(), evaluation_window_seconds)
-                                        .await
-                                    {
-                                        Ok(set_key_expiry) => set_key_expiry,
-                                        Err(err) => {
-                                            tracing::error!("Error occured while setting key expiry in redis: {}", err.to_string());
-                                            continue;
-                                        }
-                                    };
-                                    if set_key_expiry {
-                                        RuleAction::Allow
-                                    } else {
-                                        continue;
-                                    }
-                                } else {
-                                    let remaining_limit =
-                                        match redis_client.decr(ip.clone(), 1).await {
-                                            Ok(remaining_limit) => remaining_limit,
-                                            Err(err) => {
-                                                tracing::error!(
-                                                "Error occured while decrementing key in redis: {}",
-                                                err.to_string()
-                                            );
-                                                continue;
-                                            }
-                                        };
-
-                                    if remaining_limit <= 0 {
-                                        RuleAction::Block
-                                    } else {
-                                        RuleAction::Allow
-                                    }
-                                }
-                            } else {
-                                continue; // Skip this rule if redis isnt configured
-                            }
-                        } else {
-                            continue; // Skip this rule if we cant fetch the ip
-                        };
-
-                        action
-                    }
+                if let Some(action) =
+                    check_rate_based_rule_match(&data, &req, limit, evaluation_window_seconds, key)
+                        .await
+                {
+                    action
+                } else {
+                    continue;
                 }
             }
         };

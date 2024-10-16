@@ -17,7 +17,7 @@ use tokio::time;
 mod clients;
 mod config;
 mod handlers;
-// mod logging;
+mod rules;
 
 const DEFAULT_CONFIG_PATH: &str = "config.yaml";
 
