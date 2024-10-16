@@ -101,7 +101,7 @@ fn default_server_address() -> String {
 }
 
 fn default_server_port() -> u16 {
-    4000
+    DEFAULT_PORT
 }
 
 fn default_server_log_level() -> AegisServerLogLevel {
@@ -277,6 +277,16 @@ pub enum ConfigError {
 }
 
 impl AegisConfig {
+    pub fn new(upstream: String) -> Self {
+        AegisConfig {
+            upstream,
+            server: default_server(),
+            default_action: default_action(),
+            rules: vec![],
+            config_hash: 0,
+            redis: default_redis_config(),
+        }
+    }
     pub fn from_file(path: &String) -> Result<AegisConfig, ConfigError> {
         let mut config_hasher = DefaultHasher::new();
         let mut config_file = File::open(path)?;
