@@ -47,9 +47,9 @@ Aegis is designed to be simple and highly configurable. Once running, you can de
 ### Example Config
 ```yaml
 upstream: "http://localhost:8000"
-default_action: "Allow"
+default_action: "Block"
 rules:
-  - action: "Count"
+  - action: "Allow"
     condition: "All"
     type: "Regular"
     statements:
