@@ -295,7 +295,7 @@ rules:
     statements:
       - inspect:
           AllHeaders:
-            scope: All              # Inspect all headers
+            scope: Values              # Inspect all headers
             content_filter: 
                 Include:  # Apply a content filter (e.g., inspect specific headers)
                     key: "X-Forwarded-For" # Include only the "X-Forwarded-For" header for inspection
