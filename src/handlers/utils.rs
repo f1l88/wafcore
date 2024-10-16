@@ -1,6 +1,14 @@
 use std::collections::HashMap;
 
-use actix_web::{cookie::Cookie, http::StatusCode, web::Data, HttpRequest, HttpResponse};
+use actix_web::{
+    cookie::Cookie,
+    http::{
+        header::{HeaderName, HeaderValue},
+        StatusCode,
+    },
+    web::Data,
+    HttpRequest, HttpResponse,
+};
 use regex::Regex;
 use url::Url;
 
@@ -22,9 +30,14 @@ pub fn check_statement_match(
             RegularRuleStatementInspectValue::Single(val) => {
                 val.starts_with(&statement.match_string)
             }
-            RegularRuleStatementInspectValue::All(vec) => vec
-                .iter()
-                .all(|val| val.starts_with(&statement.match_string)),
+            RegularRuleStatementInspectValue::All(vec) => {
+                if vec.is_empty() {
+                    false
+                } else {
+                    vec.iter()
+                        .all(|val| val.starts_with(&statement.match_string))
+                }
+            }
             RegularRuleStatementInspectValue::Any(vec) => vec
                 .iter()
                 .any(|val| val.starts_with(&statement.match_string)),
@@ -32,7 +45,11 @@ pub fn check_statement_match(
         RegularRuleStatementMatchType::EndsWith => match value {
             RegularRuleStatementInspectValue::Single(val) => val.ends_with(&statement.match_string),
             RegularRuleStatementInspectValue::All(vec) => {
-                vec.iter().all(|val| val.ends_with(&statement.match_string))
+                if vec.is_empty() {
+                    false
+                } else {
+                    vec.iter().all(|val| val.ends_with(&statement.match_string))
+                }
             }
             RegularRuleStatementInspectValue::Any(vec) => {
                 vec.iter().any(|val| val.ends_with(&statement.match_string))
@@ -41,7 +58,11 @@ pub fn check_statement_match(
         RegularRuleStatementMatchType::Contains => match value {
             RegularRuleStatementInspectValue::Single(val) => val.contains(&statement.match_string),
             RegularRuleStatementInspectValue::All(vec) => {
-                vec.iter().all(|val| val.contains(&statement.match_string))
+                if vec.is_empty() {
+                    false
+                } else {
+                    vec.iter().all(|val| val.contains(&statement.match_string))
+                }
             }
             RegularRuleStatementInspectValue::Any(vec) => {
                 vec.iter().any(|val| val.contains(&statement.match_string))
@@ -50,7 +71,11 @@ pub fn check_statement_match(
         RegularRuleStatementMatchType::Exact => match value {
             RegularRuleStatementInspectValue::Single(val) => val == statement.match_string,
             RegularRuleStatementInspectValue::All(vec) => {
-                vec.iter().all(|val| *val == statement.match_string)
+                if vec.is_empty() {
+                    false
+                } else {
+                    vec.iter().all(|val| *val == statement.match_string)
+                }
             }
             RegularRuleStatementInspectValue::Any(vec) => {
                 vec.iter().any(|val| *val == statement.match_string)
@@ -65,10 +90,14 @@ pub fn check_statement_match(
                 }
             }
             RegularRuleStatementInspectValue::All(vec) => vec.iter().all(|val| {
-                if let Ok(re) = Regex::new(&format!(r"{}", statement.match_string)) {
-                    re.is_match(&val)
-                } else {
+                if vec.is_empty() {
                     false
+                } else {
+                    if let Ok(re) = Regex::new(&format!(r"{}", statement.match_string)) {
+                        re.is_match(&val)
+                    } else {
+                        false
+                    }
                 }
             }),
             RegularRuleStatementInspectValue::Any(vec) => vec.iter().any(|val| {
@@ -185,15 +214,25 @@ pub async fn fetch_statement_inspect(
         } => {
             let filtered_values: Vec<String> = match scope {
                 RegularRuleStatementInspectTypeScope::All => {
-                    let mut keys: Vec<String> = request
-                        .headers()
-                        .keys()
-                        .filter_map(|h| filter_inspect_content(content_filter, h.to_string()))
-                        .collect();
-                    let values: Vec<String> = request
+                    // filter the headers first if we are matching against all keys and values
+                    let filtered_headers: Vec<(&HeaderName, &HeaderValue)> = request
                         .headers()
                         .iter()
-                        .map(|v| v.1.to_str().unwrap_or("").to_string())
+                        .filter_map(|h| {
+                            if let Some(_) =
+                                filter_inspect_header_content(content_filter, h.0.to_string())
+                            {
+                                Some(h)
+                            } else {
+                                None
+                            }
+                        })
+                        .collect();
+                    let mut keys: Vec<String> =
+                        filtered_headers.iter().map(|h| h.0.to_string()).collect();
+                    let values: Vec<String> = filtered_headers
+                        .iter()
+                        .map(|h| h.1.to_str().unwrap_or("").to_string())
                         .collect();
 
                     keys.extend_from_slice(&values);
@@ -202,13 +241,28 @@ pub async fn fetch_statement_inspect(
                 RegularRuleStatementInspectTypeScope::Keys => request
                     .headers()
                     .keys()
-                    .filter_map(|k| filter_inspect_content(content_filter, k.to_string()))
+                    .filter_map(|k| filter_inspect_header_content(content_filter, k.to_string()))
                     .collect(),
-                RegularRuleStatementInspectTypeScope::Values => request
-                    .headers()
-                    .iter()
-                    .map(|v| v.1.to_str().unwrap_or("").to_string())
-                    .collect(),
+                RegularRuleStatementInspectTypeScope::Values => {
+                    let filtered_headers: Vec<(&HeaderName, &HeaderValue)> = request
+                        .headers()
+                        .iter()
+                        .filter_map(|h| {
+                            if let Some(_) =
+                                filter_inspect_header_content(content_filter, h.0.to_string())
+                            {
+                                Some(h)
+                            } else {
+                                None
+                            }
+                        })
+                        .collect();
+
+                    filtered_headers
+                        .iter()
+                        .map(|h| h.1.to_str().unwrap_or("").to_string())
+                        .collect()
+                }
             };
 
             RegularRuleStatementInspectValue::All(filtered_values)
@@ -226,7 +280,7 @@ pub async fn fetch_statement_inspect(
                     let mut keys: Vec<String> = cookies
                         .iter()
                         .filter_map(|c| {
-                            filter_inspect_content(content_filter, c.name().to_string())
+                            filter_inspect_header_content(content_filter, c.name().to_string())
                         })
                         .collect();
                     let values: Vec<String> =
@@ -242,7 +296,9 @@ pub async fn fetch_statement_inspect(
                     };
                     cookies
                         .iter()
-                        .filter_map(|c| filter_inspect_content(content_filter, c.to_string()))
+                        .filter_map(|c| {
+                            filter_inspect_header_content(content_filter, c.to_string())
+                        })
                         .collect()
                 }
                 RegularRuleStatementInspectTypeScope::Values => {
@@ -298,13 +354,14 @@ pub async fn fetch_statement_inspect(
     }
 }
 
-pub fn filter_inspect_content(
+pub fn filter_inspect_header_content(
     content_filter: &RegularRuleStatementInspectTypeContentFilter,
     h: String,
 ) -> Option<String> {
+    // We need to convert the key to lowercase because actix web reads headers as lowercase
     match content_filter {
         RegularRuleStatementInspectTypeContentFilter::Exclude { key } => {
-            if h == *key {
+            if h == *key.to_lowercase() {
                 None
             } else {
                 Some(h)
@@ -312,7 +369,7 @@ pub fn filter_inspect_content(
         }
         RegularRuleStatementInspectTypeContentFilter::All => Some(h),
         RegularRuleStatementInspectTypeContentFilter::Include { key } => {
-            if h != *key {
+            if h != *key.to_lowercase() {
                 None
             } else {
                 Some(h)

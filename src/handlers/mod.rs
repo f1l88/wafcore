@@ -40,7 +40,6 @@ pub async fn root(data: Data<AegisState>, req: HttpRequest) -> HttpResponse {
                 for statement in statements {
                     let value: RegularRuleStatementInspectValue =
                         fetch_statement_inspect(&statement.inspect, &req).await;
-                    tracing::info!("{:?}", value);
                     let statement_match: bool = check_statement_match(value, statement.clone());
 
                     // Negate statement if stated in config
@@ -62,10 +61,7 @@ pub async fn root(data: Data<AegisState>, req: HttpRequest) -> HttpResponse {
                 if is_match {
                     action
                 } else {
-                    match action {
-                        RuleAction::Count => continue,
-                        _ => action.negate(),
-                    }
+                    continue;
                 }
             }
             AegisRule::RateBased {
