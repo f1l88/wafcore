@@ -61,7 +61,7 @@ rules:
         match_string: "hello"
 ```
 
-This rule only allows requests which have a header named `custom` set to `hello`. For a description of the various fields, please refer to this [document](./docs/rules.md).
+This rule only allows requests which have a header named `custom` set to `hello`. For a description of the various fields, please refer to this [document](./documentation/config.md).
 
 ## Contributing
 
