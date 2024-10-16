@@ -5,6 +5,7 @@ description = "simple web application firewall"
 license = "MIT"
 homepage = "https://github.com/utibeabasi6/aegis"
 edition = "2021"
+publish = false
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
