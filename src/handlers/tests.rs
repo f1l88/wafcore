@@ -33,10 +33,7 @@ mod tests {
         // Start upstream server
         tokio::spawn(async move {
             HttpServer::new(|| App::new().default_service(web::to(upstream)))
-                .bind((
-                    listen_address,
-                    4000,
-                ))
+                .bind((listen_address, 4000))
                 .unwrap()
                 .run()
                 .await

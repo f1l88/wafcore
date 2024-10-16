@@ -67,7 +67,8 @@ pub async fn fetch_statement_inspect(
                         .headers()
                         .iter()
                         .filter_map(|h| {
-                            if filter_inspect_header_content(content_filter, h.0.to_string()).is_some()
+                            if filter_inspect_header_content(content_filter, h.0.to_string())
+                                .is_some()
                             {
                                 Some(h)
                             } else {
@@ -95,7 +96,8 @@ pub async fn fetch_statement_inspect(
                         .headers()
                         .iter()
                         .filter_map(|h| {
-                            if filter_inspect_header_content(content_filter, h.0.to_string()).is_some()
+                            if filter_inspect_header_content(content_filter, h.0.to_string())
+                                .is_some()
                             {
                                 Some(h)
                             } else {

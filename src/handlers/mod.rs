@@ -10,8 +10,8 @@ use crate::config::{AegisConfig, AegisRule, RuleAction};
 use crate::rules::rate_based::check_rate_based_rule_match;
 use crate::rules::regular::check_regular_rule_match;
 
-mod utils;
 mod tests;
+mod utils;
 
 // Constants
 const REDIS_FIREWALL_BLOCK_KEY: &str = "blocked_requests";
