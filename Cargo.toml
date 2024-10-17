@@ -1,6 +1,6 @@
 [package]
 name = "aegis-waf"
-version = "3.0.0"
+version = "3.1.0"
 description = "simple web application firewall"
 license = "MIT"
 homepage = "https://github.com/utibeabasi6/aegis"
