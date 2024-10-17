@@ -202,7 +202,7 @@ checksum = "512761e0bb2578dd7380c6baaa0f4ce03e84f95e960231d1dec8bf4d7d6e2627"
 
 [[package]]
 name = "aegis-waf"
-version = "2.0.0"
+version = "3.0.0"
 dependencies = [
  "actix-web",
  "bb8",
