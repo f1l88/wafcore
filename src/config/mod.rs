@@ -35,6 +35,76 @@ pub struct AegisConfig {
     pub config_hash: u64,
 }
 
+// Errors
+#[derive(Error, Debug)]
+pub enum ConfigError {
+    #[error("failed to read config file")]
+    ConfigFileAccessError(#[from] io::Error),
+    #[error("invalid config file")]
+    ConfigFileDeserialiationError(#[from] serde_yaml::Error),
+    #[error("invalid upstream address")]
+    UpstreamAddressInvalidError(#[from] url::ParseError),
+    #[error("invalid listen address")]
+    ListenAddrInvalidError(#[from] AddrParseError),
+}
+
+impl AegisConfig {
+    pub fn new(upstream: String) -> Self {
+        AegisConfig {
+            upstream,
+            server: default_server(),
+            default_action: default_action(),
+            rules: vec![],
+            config_hash: 0,
+            redis: default_redis_config(),
+        }
+    }
+    pub fn from_file(path: &String) -> Result<AegisConfig, ConfigError> {
+        let mut config_hasher = DefaultHasher::new();
+        let mut config_file = File::open(path)?;
+        let mut config_buf = String::new();
+        config_file.read_to_string(&mut config_buf)?;
+        let mut aegis_config: AegisConfig = serde_yaml::from_str(&config_buf)?;
+        config_buf.hash(&mut config_hasher);
+        aegis_config.config_hash = config_hasher.finish();
+        Ok(aegis_config)
+    }
+
+    pub fn validate(&self) -> Result<bool, ConfigError> {
+        let _ = Url::parse(self.upstream.as_str())?;
+        Ok(true)
+    }
+}
+
+pub async fn watch_config(path: String, config: Arc<Mutex<AegisConfig>>) {
+    tracing::info!("🔄 Watching config file for changes");
+    loop {
+        sleep(time::Duration::from_secs(5)).await;
+        match AegisConfig::from_file(&path) {
+            Ok(new_config) => {
+                let mut current_config: tokio::sync::MutexGuard<'_, AegisConfig> =
+                    config.lock().await;
+                if new_config.config_hash != current_config.config_hash {
+                    match new_config.validate() {
+                        Ok(_) => {
+                            *current_config = new_config;
+                            tracing::debug!("Config file updated successfully");
+                        }
+                        Err(e) => {
+                            tracing::error!("Config file invalid: {e}");
+                        }
+                    };
+                };
+            }
+            Err(err) => {
+                tracing::error!("Error while fetching config: {}", err.to_string())
+            }
+        }
+    }
+}
+
+// ===Defaults===
+
 fn default_action() -> RuleAction {
     RuleAction::Allow
 }
@@ -68,7 +138,6 @@ fn default_server() -> AegisServer {
     }
 }
 
-// TODO: Set default redis config separately
 // Default redis config
 fn default_redis_config() -> RedisConfig {
     RedisConfig {
@@ -107,6 +176,8 @@ fn default_server_port() -> u16 {
 fn default_server_log_level() -> AegisServerLogLevel {
     AegisServerLogLevel::INFO
 }
+
+// ===
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub enum AegisServerLogLevel {
@@ -263,70 +334,3 @@ pub enum AegisRule {
     },
 }
 
-// Errors
-#[derive(Error, Debug)]
-pub enum ConfigError {
-    #[error("failed to read config file")]
-    ConfigFileAccessError(#[from] io::Error),
-    #[error("invalid config file")]
-    ConfigFileDeserialiationError(#[from] serde_yaml::Error),
-    #[error("invalid upstream address")]
-    UpstreamAddressInvalidError(#[from] url::ParseError),
-    #[error("invalid listen address")]
-    ListenAddrInvalidError(#[from] AddrParseError),
-}
-
-impl AegisConfig {
-    pub fn new(upstream: String) -> Self {
-        AegisConfig {
-            upstream,
-            server: default_server(),
-            default_action: default_action(),
-            rules: vec![],
-            config_hash: 0,
-            redis: default_redis_config(),
-        }
-    }
-    pub fn from_file(path: &String) -> Result<AegisConfig, ConfigError> {
-        let mut config_hasher = DefaultHasher::new();
-        let mut config_file = File::open(path)?;
-        let mut config_buf = String::new();
-        config_file.read_to_string(&mut config_buf)?;
-        let mut aegis_config: AegisConfig = serde_yaml::from_str(&config_buf)?;
-        config_buf.hash(&mut config_hasher);
-        aegis_config.config_hash = config_hasher.finish();
-        Ok(aegis_config)
-    }
-
-    pub fn validate(&self) -> Result<bool, ConfigError> {
-        let _ = Url::parse(self.upstream.as_str())?;
-        Ok(true)
-    }
-}
-
-pub async fn watch_config(path: String, config: Arc<Mutex<AegisConfig>>) {
-    tracing::info!("🔄 Watching config file for changes");
-    loop {
-        sleep(time::Duration::from_secs(5)).await;
-        match AegisConfig::from_file(&path) {
-            Ok(new_config) => {
-                let mut current_config: tokio::sync::MutexGuard<'_, AegisConfig> =
-                    config.lock().await;
-                if new_config.config_hash != current_config.config_hash {
-                    match new_config.validate() {
-                        Ok(_) => {
-                            *current_config = new_config;
-                            tracing::debug!("Config file updated successfully");
-                        }
-                        Err(e) => {
-                            tracing::error!("Config file invalid: {e}");
-                        }
-                    };
-                };
-            }
-            Err(err) => {
-                tracing::error!("Error while fetching config: {}", err.to_string())
-            }
-        }
-    }
-}

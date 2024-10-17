@@ -55,13 +55,17 @@ pub async fn proxy(data: Data<AegisState>, req: HttpRequest) -> HttpResponse {
 
     let proxy_status = match StatusCode::from_u16(res.status().as_u16()) {
         Ok(code) => code,
-        Err(_) => return HttpResponse::InternalServerError().body("Error from Aegis"),
+        Err(_) => return HttpResponse::InternalServerError().body("Invalid status code from upstream"),
     };
     let mut proxy_res = HttpResponse::build(proxy_status);
     for (name, value) in res.headers().iter() {
         proxy_res.insert_header((name.as_str(), value.to_str().unwrap_or("")));
     }
 
-    let body = res.bytes().await.unwrap_or_default();
+    // Return the response body
+    let body = match res.bytes().await {
+        Ok(bytes) => bytes,
+        Err(_) => return HttpResponse::InternalServerError().body("Error reading response body"),
+    };
     proxy_res.body(body)
 }

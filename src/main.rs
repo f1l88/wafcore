@@ -5,6 +5,7 @@ use clap::Parser;
 
 use handlers::{root, AegisState};
 use std::sync::Arc;
+use tracing::level_filters::LevelFilter;
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -20,6 +21,7 @@ mod handlers;
 mod rules;
 
 const DEFAULT_CONFIG_PATH: &str = "config.yaml";
+const DEFAULT_LOG_ENV_FILTER: &str = "info,actix_server=error";
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -33,36 +35,15 @@ async fn main() -> std::io::Result<()> {
     // Parse CLI args
     let args = Args::parse();
 
-    // Fetch config
-    let config: AegisConfig = AegisConfig::from_file(&args.config_file).unwrap();
-    config.validate().unwrap();
+    // Fetch and validate config
+    let config = fetch_config(&args);
 
-    // Init logger
-    let fmt_layer = tracing_subscriber::fmt::layer()
-        .with_span_events(FmtSpan::NONE)
-        .with_target(true);
-
-    let filter = EnvFilter::new("info,actix_server=error");
-
-    tracing_subscriber::registry()
-        .with(config.server.log_level.into_level_filter())
-        .with(filter)
-        .with(fmt_layer)
-        .init();
+    // Initialize logger
+    init_logger(config.server.log_level.into_level_filter());
 
     // Init Redis client
-    let redis_client: Option<clients::redis::RedisClient>;
-    if config.redis.enabled {
-        redis_client = Some(
-            clients::redis::RedisClient::new(config.redis.url.clone())
-                .await
-                .unwrap(),
-        );
-        tracing::info!("🔌 Connected to redis");
-    } else {
-        tracing::warn!("Redis is disabled");
-        redis_client = None
-    }
+    let redis_client: Option<clients::redis::RedisClient> =
+        init_redis_client(config.redis.enabled, &config.redis.url).await;
 
     // Init http client
     let http_client = reqwest::Client::new();
@@ -97,4 +78,42 @@ async fn main() -> std::io::Result<()> {
     .client_request_timeout(time::Duration::from_secs(10))
     .run()
     .await
+}
+
+fn init_logger(log_level: LevelFilter) {
+    // Init logger
+    let fmt_layer = tracing_subscriber::fmt::layer()
+        .with_span_events(FmtSpan::NONE)
+        .with_target(true);
+
+    let filter = EnvFilter::new(DEFAULT_LOG_ENV_FILTER);
+
+    tracing_subscriber::registry()
+        .with(log_level)
+        .with(filter)
+        .with(fmt_layer)
+        .init();
+}
+
+fn fetch_config(args: &Args) -> AegisConfig {
+    // Fetch config
+    let config: AegisConfig = AegisConfig::from_file(&args.config_file).unwrap();
+    config.validate().unwrap();
+
+    config
+}
+
+async fn init_redis_client(
+    redis_enabled: bool,
+    redis_url: &String,
+) -> Option<clients::redis::RedisClient> {
+    if redis_enabled {
+        let redis_client = Some(clients::redis::RedisClient::new(redis_url).await.unwrap());
+        tracing::info!("🔌 Connected to redis");
+
+        redis_client
+    } else {
+        tracing::warn!("Redis is disabled");
+        None
+    }
 }
