@@ -3,7 +3,11 @@ use actix_web::web::Data;
 use actix_web::{web, App, HttpServer};
 use clap::Parser;
 
+use clients::metrics::AegisMetrics;
 use handlers::{root, AegisState};
+use opentelemetry::{global, KeyValue};
+use opentelemetry_otlp::{ExportConfig, WithExportConfig};
+use opentelemetry_sdk::{runtime, Resource};
 use std::sync::Arc;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::fmt::format::FmtSpan;
@@ -20,7 +24,7 @@ mod config;
 mod handlers;
 mod rules;
 
-const DEFAULT_CONFIG_PATH: &str = "config.yaml";
+const DEFAULT_CONFIG_PATH: &str = "aegis.yaml";
 const DEFAULT_LOG_ENV_FILTER: &str = "info,actix_server=error";
 
 #[derive(Parser, Debug)]
@@ -48,14 +52,28 @@ async fn main() -> std::io::Result<()> {
     // Init http client
     let http_client = reqwest::Client::new();
 
+    // Init metrics
+    // Init meter provider
+    let metrics: Option<AegisMetrics>;
+    if config.metrics.enabled {
+        let _ = init_meter_provider(
+            &config.metrics.export_endpoint,
+            config.metrics.export_interval,
+        );
+        metrics = Some(AegisMetrics::new());
+    } else {
+        metrics = None
+    }
+
     let listen_address = config.server.address.clone();
     let listen_port = config.server.port;
 
     // Init AegisState
     let state: AegisState = AegisState {
-        config: Arc::new(Mutex::new(config)),
+        config: Arc::new(Mutex::new(config.clone())),
         redis_client,
         http_client,
+        metrics,
     };
 
     // Watch config file for changes every 5 seconds
@@ -116,4 +134,31 @@ async fn init_redis_client(
         tracing::warn!("Redis is disabled");
         None
     }
+}
+
+fn init_meter_provider(
+    otel_endpoint: &String,
+    interval: u64,
+) -> opentelemetry_sdk::metrics::SdkMeterProvider {
+    let export_config = ExportConfig {
+        endpoint: otel_endpoint.to_string(),
+        ..ExportConfig::default()
+    };
+
+    let provider = opentelemetry_otlp::new_pipeline()
+        .metrics(runtime::Tokio)
+        .with_exporter(
+            opentelemetry_otlp::new_exporter()
+                .tonic()
+                .with_export_config(export_config),
+        )
+        .with_resource(Resource::new(vec![KeyValue::new(
+            opentelemetry_semantic_conventions::resource::SERVICE_NAME,
+            "aegis",
+        )]))
+        .with_period(time::Duration::from_secs(interval))
+        .build()
+        .unwrap();
+    global::set_meter_provider(provider.clone());
+    provider
 }

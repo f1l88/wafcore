@@ -22,7 +22,8 @@ pub enum RedisError {
 
 impl RedisClient {
     pub async fn new(url: &String) -> Result<Self, RedisError> {
-        let manager: RedisConnectionManager = bb8_redis::RedisConnectionManager::new(url.to_string())?;
+        let manager: RedisConnectionManager =
+            bb8_redis::RedisConnectionManager::new(url.to_string())?;
         let pool = bb8::Pool::builder().max_size(20).build(manager).await?;
         // Attempt to ping redis
         let p = pool.clone();

@@ -37,3 +37,7 @@ hyper = "1.4.1"
 http-body-util = "0.1.2"
 bytes = "1.7.2"
 actix-web = "4.9.0"
+opentelemetry = "0.26.0"
+opentelemetry_sdk = {version = "0.26.0", features = ["rt-tokio"]}
+opentelemetry-otlp = "0.26.0"
+opentelemetry-semantic-conventions = "0.26.0"

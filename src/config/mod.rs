@@ -33,6 +33,8 @@ pub struct AegisConfig {
     pub rules: Vec<AegisRule>,
     #[serde(skip)]
     pub config_hash: u64,
+    #[serde(default = "default_metrics_config")]
+    pub metrics: MetricsConfig,
 }
 
 // Errors
@@ -57,6 +59,7 @@ impl AegisConfig {
             rules: vec![],
             config_hash: 0,
             redis: default_redis_config(),
+            metrics: default_metrics_config(),
         }
     }
     pub fn from_file(path: &String) -> Result<AegisConfig, ConfigError> {
@@ -146,12 +149,32 @@ fn default_redis_config() -> RedisConfig {
     }
 }
 
+fn default_metrics_config() -> MetricsConfig {
+    MetricsConfig {
+        enabled: true,
+        export_endpoint: "http://localhost:4317".to_string(),
+        export_interval: default_metrics_export_interval(),
+    }
+}
+
 fn default_redis_enabled() -> bool {
     true
 }
 
 fn default_redis_url() -> String {
     "redis://127.0.0.1/".to_string()
+}
+
+fn default_metrics_enabled() -> bool {
+    true
+}
+
+fn default_metrics_export_endpoint() -> String {
+    "http://localhost:4317".to_string()
+}
+
+fn default_metrics_export_interval() -> u64 {
+    15
 }
 
 // Server config
@@ -207,6 +230,17 @@ pub struct RedisConfig {
     pub enabled: bool,
     #[serde(default = "default_redis_url")]
     pub url: String,
+}
+
+// Metrics config
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct MetricsConfig {
+    #[serde(default = "default_metrics_enabled")]
+    pub enabled: bool,
+    #[serde(default = "default_metrics_export_endpoint")]
+    pub export_endpoint: String,
+    #[serde(default = "default_metrics_export_interval")]
+    pub export_interval: u64,
 }
 
 // Regular rule statement config
@@ -333,4 +367,3 @@ pub enum AegisRule {
         key: RateBasedRuleKey,
     },
 }
-

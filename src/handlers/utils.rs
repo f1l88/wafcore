@@ -55,7 +55,9 @@ pub async fn proxy(data: Data<AegisState>, req: HttpRequest) -> HttpResponse {
 
     let proxy_status = match StatusCode::from_u16(res.status().as_u16()) {
         Ok(code) => code,
-        Err(_) => return HttpResponse::InternalServerError().body("Invalid status code from upstream"),
+        Err(_) => {
+            return HttpResponse::InternalServerError().body("Invalid status code from upstream")
+        }
     };
     let mut proxy_res = HttpResponse::build(proxy_status);
     for (name, value) in res.headers().iter() {

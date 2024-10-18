@@ -44,6 +44,7 @@ mod tests {
             config: Arc::new(Mutex::new(config)),
             redis_client: None,
             http_client,
+            metrics: None,
         };
 
         let app = test::init_service(

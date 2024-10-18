@@ -4,6 +4,7 @@
     <img src="https://img.shields.io/badge/status-active-green.svg">
     <img src="https://img.shields.io/badge/license-MIT-blue.svg">
     <img src="https://img.shields.io/badge/language-Rust-red.svg">
+    <img src="https://img.shields.io/badge/release-3.1.0-green.svg">
     <!-- <img src="aegis.png" alt="Aegis Logo" > -->
 </div>
 
