@@ -45,6 +45,18 @@
 
 Aegis is designed to be simple and highly configurable. Once running, you can define custom rules for rate limiting, request filtering, and traffic monitoring.
 
+### Installation
+
+Install the latest version of Aegis by running the following command
+```shell
+cargo install aegis-waf
+```
+
+Start aegis by running 
+```shell
+aegis --config-file /path/to/your/config.yaml
+```
+
 ### Example Config
 ```yaml
 upstream: "http://localhost:8000"
@@ -56,13 +68,13 @@ rules:
     statements:
       - inspect: 
           Header:
-            key: "custom"
+            key: "hello"
         negate_statement: false
         match_type: "Contains"
-        match_string: "hello"
+        match_string: "world"
 ```
 
-This rule only allows requests which have a header named `custom` set to `hello`. For a description of the various fields, please refer to this [document](./documentation/config.md).
+This rule only allows requests which have a header named `hello` set to `world`. For a description of the various fields, please refer to this [document](./documentation/config.md).
 
 ## Contributing
 
