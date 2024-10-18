@@ -76,9 +76,9 @@ rules:                       # List of firewall rules
     - A list of rules that define how Aegis processes requests. Please refer to [this document](./rules.md) for more information on rules.
 
 6. **`metrics`** (MetricsConfig)
-  - **`enabled`**: Enable or disable metric collection
-    - Default: true
-  - **`export_endpoint`**: Otel collector endpoint
-      - Default: `"http://localhost:4317"`
-  - **`export_interval`**: Interval (in seconds) to export metrics
-      - Default: `15`
+    - **`enabled`**: Enable or disable metric collection
+      - Default: true
+    - **`export_endpoint`**: Otel collector endpoint
+        - Default: `"http://localhost:4317"`
+    - **`export_interval`**: Interval (in seconds) to export metrics
+        - Default: `15`
