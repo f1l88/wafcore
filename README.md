@@ -8,7 +8,7 @@
     <!-- <img src="aegis.png" alt="Aegis Logo" > -->
 </div>
 
-<div align="center"> <strong>Aegis</strong> is a web application firewall written in Rust. It provides features like robust content filtering and rate limiting with redis.</div>
+<div align="center"> <strong>WAFCore</strong> is a web application firewall written in Rust. It provides features like robust content filtering and rate limiting with redis.</div>
 
 ## Features
 
