@@ -40,6 +40,7 @@ impl RedisClient {
         }
     }
 
+    #[allow(dead_code)]
     pub async fn get<T: bb8_redis::redis::FromRedisValue>(
         &self,
         key: String,
@@ -49,6 +50,7 @@ impl RedisClient {
         Ok(res)
     }
 
+    #[allow(dead_code)]
     pub async fn incr<
         T: bb8_redis::redis::FromRedisValue + bb8_redis::redis::ToRedisArgs + Send + Sync,
     >(
