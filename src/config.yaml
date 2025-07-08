@@ -1,0 +1,13 @@
+upstream: "http://localhost:8000"
+default_action: "Block"
+rules:
+  - action: "Allow"
+    condition: "All"
+    type: "Regular"
+    statements:
+      - inspect: 
+          Header:
+            key: "hello"
+        negate_statement: false
+        match_type: "Contains"
+        match_string: "world"
