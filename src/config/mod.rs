@@ -51,6 +51,7 @@ pub enum ConfigError {
 }
 
 impl AegisConfig {
+    #[allow(dead_code)]
     pub fn new(upstream: String) -> Self {
         AegisConfig {
             upstream,
@@ -344,6 +345,7 @@ pub enum RuleAction {
 }
 
 impl RuleAction {
+    #[allow(dead_code)]
     pub fn negate(&self) -> Self {
         match self {
             RuleAction::Allow => RuleAction::Block,
