@@ -24,7 +24,7 @@ mod config;
 mod handlers;
 mod rules;
 
-const DEFAULT_CONFIG_PATH: &str = "aegis.yaml";
+const DEFAULT_CONFIG_PATH: &str = "config.yaml";
 const DEFAULT_LOG_ENV_FILTER: &str = "info,actix_server=error";
 
 #[derive(Parser, Debug)]
