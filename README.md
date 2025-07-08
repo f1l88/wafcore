@@ -1,5 +1,5 @@
 <div align="center">
-    <h1>WAFCore</h1>
+    <h1>Waffle</h1>
     <p>Simple Web Application Firewall</p>
     <img src="https://img.shields.io/badge/status-active-green.svg">
     <img src="https://img.shields.io/badge/license-MIT-blue.svg">
